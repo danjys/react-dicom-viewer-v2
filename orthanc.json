@@ -1,0 +1,14 @@
+{
+  "Name": "Orthanc",
+  "StorageDirectory": "/var/lib/orthanc/db",
+  "RegisteredUsers" : {
+    "orthanc" : "orthanc"
+  },
+  "HttpServerEnabled": true,
+  "HttpPort": 8042,
+  "DicomAet": "ORTHANC",
+  "DicomPort": 4242,
+  "AllowCORS": true,
+  "AuthenticationEnabled": true,
+  "RemoteAccessAllowed": true
+}

@@ -1,0 +1,10 @@
+services:
+  orthanc:
+    image: jodogne/orthanc-plugins:latest
+    platform: linux/amd64
+    volumes:
+      - ./orthanc.json:/etc/orthanc/orthanc.json:ro
+      - ./data:/var/lib/orthanc/db
+    ports:
+      - "8042:8042"
+      - "4242:4242"
