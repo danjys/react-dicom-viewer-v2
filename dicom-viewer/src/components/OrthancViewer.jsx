@@ -24,12 +24,11 @@ function OrthancViewer({ series }) {
   const viewerRef = useRef(null);
   const [stack, setStack] = useState([]);
 
-  // Initialize viewer + tools (run once)
+  // Initialize viewer + tools
   useEffect(() => {
     if (!viewerRef.current) return;
 
     cornerstone.enable(viewerRef.current);
-
     cornerstoneTools.init();
 
     cornerstoneTools.addTool(cornerstoneTools.PanTool);
@@ -40,12 +39,18 @@ function OrthancViewer({ series }) {
     cornerstoneTools.setToolActive("Zoom", { mouseButtonMask: 2 });
     cornerstoneTools.setToolActive("StackScrollMouseWheel", {});
 
+    // ✅ Resize canvas after div layout is ready
+    const resizeObserver = new ResizeObserver(() => {
+      cornerstone.resize(viewerRef.current, true);
+    });
+    resizeObserver.observe(viewerRef.current);
+
     return () => {
       cornerstone.disable(viewerRef.current);
+      resizeObserver.disconnect();
     };
   }, []);
 
-  // Load images when series changes
   useEffect(() => {
     if (!series || !viewerRef.current) return;
 
@@ -57,49 +62,27 @@ function OrthancViewer({ series }) {
             Accept: "application/json",
           },
         });
-
-        if (!res.ok) {
-          throw new Error(`Error fetching series instances: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Error fetching series instances: ${res.status}`);
 
         const instanceData = await res.json();
-        console.log("RAW instances response:", instanceData);
-
-        // ✅ Sort slices correctly
         const sortedInstances = instanceData.sort((a, b) => {
-          const aNum = parseInt(a.MainDicomTags?.InstanceNumber || 0);
-          const bNum = parseInt(b.MainDicomTags?.InstanceNumber || 0);
-          return aNum - bNum;
+          return (parseInt(a.MainDicomTags?.InstanceNumber || 0) - parseInt(b.MainDicomTags?.InstanceNumber || 0));
         });
 
-        // ✅ FIX: use instance.ID (not object)
-        const wadouriImageIds = sortedInstances.map(
-          (instance) =>
-            `wadouri:/api/instances/${instance.ID}/file`
-        );
-
+        const wadouriImageIds = sortedInstances.map((instance) => `wadouri:/api/instances/${instance.ID}/file`);
         setStack(wadouriImageIds);
 
-        if (wadouriImageIds.length === 0) {
-          console.warn("No images found for this series");
-          return;
-        }
+        if (wadouriImageIds.length === 0) return;
 
-        // Load and display first image
-        const firstImage = await cornerstone.loadAndCacheImage(
-          wadouriImageIds[0]
-        );
-
+        const firstImage = await cornerstone.loadAndCacheImage(wadouriImageIds[0]);
         cornerstone.displayImage(viewerRef.current, firstImage);
 
-        // Setup stack scrolling
         cornerstoneTools.addStackStateManager(viewerRef.current, ["stack"]);
         cornerstoneTools.addToolState(viewerRef.current, "stack", {
           imageIds: wadouriImageIds,
           currentImageIdIndex: 0,
         });
 
-        console.log("Loaded series:", series, wadouriImageIds);
       } catch (err) {
         console.error("Error loading series:", err);
       }
@@ -112,11 +95,12 @@ function OrthancViewer({ series }) {
     <div
       ref={viewerRef}
       style={{
+        flex: 1,
         width: "100%",
         height: "100%",
-        backgroundColor: "black",
-        border: "2px solid #444",
+        backgroundColor: "#000",
         borderRadius: "6px",
+        display: "block",
       }}
       onContextMenu={(e) => e.preventDefault()}
     />

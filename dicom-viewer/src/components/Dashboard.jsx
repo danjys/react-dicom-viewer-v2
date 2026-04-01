@@ -43,8 +43,19 @@ function Dashboard() {
             </div>
 
             <div className="column">
-                <OrthancViewer series={selectedSeries} />
-            </div>
+    <div
+        style={{
+            flex: 1,
+            width: "100%",
+            minWidth: 0,   // ✅ important in flex layouts
+            height: "100%",
+            display: "flex", // make inner div a flex container
+            flexDirection: "column",
+        }}
+    >
+        <OrthancViewer series={selectedSeries} />
+    </div>
+</div>
         </div>
     );
 }
