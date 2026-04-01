@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import PatientList from "./PatientList";
 import StudyList from "./StudyList";
 import SeriesList from "./SeriesList";
-import DicomViewer from "./DicomViewer";
+import OrthancViewer from "./OrthancViewer"; // <- updated
 import './Dashboard.css';
 
 function Dashboard() {
@@ -26,7 +26,7 @@ function Dashboard() {
             <div className="column">
                 <StudyList
                     patientId={selectedPatient}
-                    selectedStudy={selectedStudy}   // <- pass the selectedStudy for styling
+                    selectedStudy={selectedStudy}
                     onStudySelect={study => {
                         setSelectedStudy(study);
                         setSelectedSeries(null);
@@ -37,12 +37,13 @@ function Dashboard() {
             <div className="column">
                 <SeriesList
                     study={selectedStudy}
+                    selectedSeries={selectedSeries}
                     onSeriesSelect={series => setSelectedSeries(series)}
                 />
             </div>
 
             <div className="column">
-                <DicomViewer series={selectedSeries} />
+                <OrthancViewer series={selectedSeries} />
             </div>
         </div>
     );

@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from "react";
 import './SeriesList.css';
 
-function SeriesList({ study, onSeriesSelect, selectedSeries }) {
+function SeriesList({ study, selectedSeries, onSeriesSelect }) {
   const [seriesList, setSeriesList] = useState([]);
 
   useEffect(() => {
     if (!study) {
-      console.log("No study selected, clearing series.");
       setSeriesList([]);
       return;
     }
-
-    console.log(`Fetching series for study ${study.ID}...`);
     setSeriesList(study.Series || []);
   }, [study]);
-
-  const handleSeriesClick = (seriesId) => {
-    console.log("Series clicked:", seriesId);
-    if (onSeriesSelect) onSeriesSelect(seriesId);
-  };
 
   return (
     <div className="series-column">
@@ -29,7 +21,7 @@ function SeriesList({ study, onSeriesSelect, selectedSeries }) {
           <li key={seriesId}>
             <button
               className={`series-button ${selectedSeries === seriesId ? 'selected' : ''}`}
-              onClick={() => handleSeriesClick(seriesId)}
+              onClick={() => onSeriesSelect(seriesId)}
             >
               {seriesId}
             </button>
