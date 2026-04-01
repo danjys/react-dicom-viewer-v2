@@ -1,0 +1,119 @@
+/* Dashboard container */
+.dashboard {
+  display: grid;
+  grid-template-columns: 200px 250px 250px 1fr; /* 4 columns: patients, studies, series, viewer */
+  height: 100vh; /* full viewport height */
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+  background-color: #1e1e1e; /* dark gray background for dashboard */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Column styling */
+.column {
+  background: #2c2c2c;       /* slightly lighter dark gray */
+  border: 1px solid #444;    /* subtle border */
+  border-radius: 6px;
+  padding: 10px;
+  overflow-y: auto;
+  color: #f0f0f0;            /* light text */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Headings inside columns */
+.column h2,
+.column h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #ffffff;
+  border-bottom: 1px solid #555;
+  padding-bottom: 4px;
+  font-size: 1.1rem;
+}
+
+/* Generic list inside columns */
+.column ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+/* Buttons for patients, studies, series */
+.patient-button,
+.study-button,
+.series-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  margin-bottom: 5px;
+  border: none;
+  border-radius: 4px;
+  background: #3a3a3a;        /* medium gray */
+  color: #f5f5f5;             /* light text */
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-size: 0.95rem;
+}
+
+.patient-button:hover,
+.study-button:hover,
+.series-button:hover {
+  background: #505050;         /* lighter on hover */
+  transform: translateX(2px);
+}
+
+/* Selected item highlight */
+.patient-button.selected,
+.study-button.selected,
+.series-button.selected {
+  background: #707070;         /* even lighter gray */
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Scrollbar styling */
+.column::-webkit-scrollbar {
+  width: 8px;
+}
+
+.column::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+}
+
+.column::-webkit-scrollbar-track {
+  background: #2c2c2c;
+}
+
+/* DicomViewer column styling */
+.column:last-child {
+  background: #1a1a1a;         /* darkest column for viewer */
+  border: 1px solid #333;
+}
+
+/* Optional: small headings in study/series lists */
+.study-list-item,
+.series-list-item {
+  font-size: 0.9rem;
+  color: #e0e0e0;
+}
+
+/* Responsive tweaks for smaller screens */
+@media (max-width: 1200px) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr 1fr 2fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .column:last-child {
+    grid-column: span 3;
+  }
+}

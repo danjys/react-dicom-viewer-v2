@@ -1,33 +1,10 @@
-import React, { useState } from "react";
-import PatientList from "./components/PatientList";
-import StudyList from "./components/StudyList";
-import OrthancViewer from "./components/OrthancViewer";
+import React from "react";
+import Dashboard from "./components/Dashboard";
 
 function App() {
-  const [selectedPatient, setSelectedPatient] = useState(null);
-  const [selectedStudy, setSelectedStudy] = useState(null);
-
   return (
     <div>
-      {!selectedPatient && (
-        <PatientList onSelectPatient={setSelectedPatient} />
-      )}
-
-      {selectedPatient && !selectedStudy && (
-        <StudyList
-          patientId={selectedPatient}
-          onSelectStudy={setSelectedStudy}
-          onBack={() => setSelectedPatient(null)}
-        />
-      )}
-
-      {selectedPatient && selectedStudy && (
-        <OrthancViewer
-          patientId={selectedPatient}
-          studyId={selectedStudy}
-          onBack={() => setSelectedStudy(null)}
-        />
-      )}
+      <Dashboard />
     </div>
   );
 }

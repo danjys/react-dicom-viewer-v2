@@ -1,0 +1,45 @@
+.patient-column {
+  height: 100%;
+  background-color: #2c2c2c; /* dark gray */
+  color: #f5f5f5;
+  border-radius: 5px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.patient-column h2 {
+  margin-top: 0;
+  color: #fff;
+  text-align: center;
+  border-bottom: 1px solid #555;
+  padding-bottom: 5px;
+}
+
+.patient-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.patient-button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  background-color: #3a3a3a;
+  color: #f5f5f5;
+  transition: background 0.2s;
+}
+
+.patient-button:hover {
+  background-color: #505050;
+}
+
+.patient-button.selected {
+  background-color: #007acc;
+  color: #fff;
+}
