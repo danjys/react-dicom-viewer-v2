@@ -1,46 +1,66 @@
+/* Container */
 .series-column {
-  background-color: transparent; /* let Dashboard.css column bg show through */
+  background-color: transparent;
   padding: 10px;
   border-radius: 5px;
   height: 100%;
   overflow-y: auto;
 }
 
+/* Title */
 .series-column h2 {
-  margin-top: 0;
+  margin: 0 0 10px 0;
   color: #ffffff;
   border-bottom: 1px solid #555;
   padding-bottom: 4px;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
+/* List */
 .series-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.series-button {
-  display: block;
+/* Series Card */
+.series-card {
   width: 100%;
   text-align: left;
-  padding: 6px 10px;
-  margin-bottom: 5px;
+  padding: 10px;
+  margin-bottom: 8px;
   border: none;
-  border-radius: 4px;
-  background: #3a3a3a;       /* matches dashboard column */
-  color: #f5f5f5;            /* light text */
+  border-radius: 6px;
+  background: #3a3a3a;
+  color: #f5f5f5;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: all 0.2s ease;
 }
 
-.series-button:hover {
-  background: #505050;       /* slightly lighter on hover */
-  transform: translateX(2px);
+/* Hover */
+.series-card:hover {
+  background: #505050;
+  transform: translateY(-2px);
 }
 
-.series-button.selected {
-  background: #707070;       /* highlight selected */
-  font-weight: bold;
-  color: #fff;
+/* Selected */
+.series-card.selected {
+  background: #707070;
+  border-left: 4px solid #4da3ff;
+}
+
+/* Title */
+.series-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  color: #ffffff;
+}
+
+/* Meta row */
+.series-meta {
+  font-size: 0.75rem;
+  color: #ccc;
+  display: flex;
+  justify-content: space-between;
 }

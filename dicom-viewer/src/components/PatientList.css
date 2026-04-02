@@ -1,45 +1,77 @@
+/* Container */
 .patient-column {
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  background-color: #2c2c2c; /* dark gray */
-  color: #f5f5f5;
-  border-radius: 5px;
-  padding: 10px;
-  overflow-y: auto;
 }
 
+/* Title */
 .patient-column h2 {
-  margin-top: 0;
-  color: #fff;
-  text-align: center;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
   border-bottom: 1px solid #555;
-  padding-bottom: 5px;
+  padding-bottom: 6px;
 }
 
+/* List */
 .patient-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.patient-button {
-  display: block;
+/* Patient Card */
+.patient-card {
   width: 100%;
   text-align: left;
-  padding: 8px 10px;
-  margin-bottom: 4px;
+  padding: 10px;
+  margin-bottom: 8px;
   border: none;
-  border-radius: 3px;
-  cursor: pointer;
+  border-radius: 6px;
   background-color: #3a3a3a;
   color: #f5f5f5;
-  transition: background 0.2s;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.patient-button:hover {
+/* Hover effect */
+.patient-card:hover {
   background-color: #505050;
+  transform: translateY(-2px);
 }
 
-.patient-button.selected {
-  background-color: #007acc;
-  color: #fff;
+/* Selected state */
+.patient-card.selected {
+  background-color: #707070;
+  border-left: 4px solid #4da3ff;
+}
+
+/* Patient Name */
+.patient-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  color: #ffffff;
+}
+
+/* Metadata row */
+.patient-meta {
+  font-size: 0.75rem;
+  color: #ccc;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Scrollbar (optional, matches your theme) */
+.patient-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.patient-column::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+}
+
+.patient-column::-webkit-scrollbar-track {
+  background-color: #2c2c2c;
 }
