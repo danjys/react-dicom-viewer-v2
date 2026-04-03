@@ -1,17 +1,18 @@
-// Dashboard.jsx - WITH 2D/3D TOGGLE AND PROPER CSS CLASSES
+// Dashboard.jsx - WITH 2D/3D/PatientMap TOGGLE AND PROPER CSS CLASSES
 import React, { useState } from "react";
 import PatientList from "./PatientList";
 import StudyList from "./StudyList";
 import SeriesList from "./SeriesList";
 import OrthancViewer3D from "./OrthancViewer3D";
 import OrthancViewer from "./OrthancViewer";
+import PatientMap from "./PatientMap"; // Import your PatientMap component
 import './Dashboard.css';
 
 function Dashboard() {
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [selectedStudy, setSelectedStudy] = useState(null);
     const [selectedSeries, setSelectedSeries] = useState(null);
-    const [viewerMode, setViewerMode] = useState("2D"); // "2D" or "3D"
+    const [viewerMode, setViewerMode] = useState("2D"); // "2D", "3D", or "patientmap"
     const [isSwitching, setIsSwitching] = useState(false);
 
     const handleViewerModeChange = (mode) => {
@@ -19,6 +20,28 @@ function Dashboard() {
         setIsSwitching(true);
         setViewerMode(mode);
         setTimeout(() => setIsSwitching(false), 300);
+    };
+
+    // Helper to render the appropriate viewer
+    const renderViewer = () => {
+        if (!selectedSeries) {
+            return (
+                <div className="no-series-selected">
+                    <p>Select a series from the list to view</p>
+                </div>
+            );
+        }
+
+        switch(viewerMode) {
+            case "2D":
+                return <OrthancViewer series={selectedSeries.orthancSeriesId || selectedSeries.ID} />;
+            case "3D":
+                return <OrthancViewer3D series={selectedSeries} />;
+            case "patientmap":
+                return <PatientMap series={selectedSeries} patientId={selectedPatient} studyId={selectedStudy} />;
+            default:
+                return <OrthancViewer series={selectedSeries.orthancSeriesId || selectedSeries.ID} />;
+        }
     };
 
     return (
@@ -71,6 +94,13 @@ function Dashboard() {
                         >
                             🧊 3D Volume Viewer
                         </button>
+                        <button
+                            className={`mode-button ${viewerMode === "patientmap" ? "active" : ""}`}
+                            onClick={() => handleViewerModeChange("patientmap")}
+                            disabled={!selectedPatient} // PatientMap needs at least a patient
+                        >
+                            🗺️ Patient Treatment Map
+                        </button>
                     </div>
                     {selectedSeries && (
                         <div className="series-info">
@@ -83,15 +113,7 @@ function Dashboard() {
                 
                 {/* Viewer Container */}
                 <div className={`viewer-container ${isSwitching ? 'loading' : ''}`}>
-                    {!selectedSeries ? (
-                        <div className="no-series-selected">
-                            <p>Select a series from the list to view</p>
-                        </div>
-                    ) : viewerMode === "2D" ? (
-                        <OrthancViewer series={selectedSeries.orthancSeriesId || selectedSeries.ID} />
-                    ) : (
-                        <OrthancViewer3D series={selectedSeries} />
-                    )}
+                    {renderViewer()}
                 </div>
             </div>
         </div>
