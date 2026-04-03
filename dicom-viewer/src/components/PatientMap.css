@@ -93,26 +93,25 @@
 }
 
 /* Node styles */
-.patientmap-graph .node {
+.patientmap-graph g.node {
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
-.patientmap-graph .node:hover {
+.patientmap-graph g.node:hover {
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
-  transform: translateY(-2px);
 }
 
-.patientmap-graph .node.highlighted {
+.patientmap-graph g.node.highlighted {
   filter: drop-shadow(0 0 10px rgba(0, 150, 255, 0.5));
 }
 
 /* Edge styles */
-.patientmap-graph path {
+.patientmap-graph path.edge {
   transition: stroke-width 0.2s ease;
 }
 
-.patientmap-graph path:hover {
+.patientmap-graph path.edge:hover {
   stroke-width: 3px !important;
 }
 
