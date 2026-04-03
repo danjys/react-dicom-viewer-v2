@@ -15,96 +15,113 @@ cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
 
 // Configure WADO-URI loader to add authentication
 cornerstoneWADOImageLoader.configure({
-  beforeSend: function (xhr) {
-    xhr.setRequestHeader("Authorization", "Basic " + btoa("orthanc:orthanc"));
-  },
+    beforeSend: function (xhr) {
+        xhr.setRequestHeader("Authorization", "Basic " + btoa("orthanc:orthanc"));
+    },
 });
 
 function OrthancViewer({ series }) {
-  const viewerRef = useRef(null);
-  const [stack, setStack] = useState([]);
+    const viewerRef = useRef(null);
+    const [stack, setStack] = useState([]);
 
-  // Initialize viewer + tools
-  useEffect(() => {
-    if (!viewerRef.current) return;
+    // Initialize viewer + tools (run once)
+    useEffect(() => {
+        if (!viewerRef.current) return;
 
-    cornerstone.enable(viewerRef.current);
-    cornerstoneTools.init();
+        cornerstone.enable(viewerRef.current);
 
-    cornerstoneTools.addTool(cornerstoneTools.PanTool);
-    cornerstoneTools.addTool(cornerstoneTools.ZoomTool);
-    cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
+        cornerstoneTools.init();
 
-    cornerstoneTools.setToolActive("Pan", { mouseButtonMask: 1 });
-    cornerstoneTools.setToolActive("Zoom", { mouseButtonMask: 2 });
-    cornerstoneTools.setToolActive("StackScrollMouseWheel", {});
+        cornerstoneTools.addTool(cornerstoneTools.PanTool);
+        cornerstoneTools.addTool(cornerstoneTools.ZoomTool);
+        cornerstoneTools.addTool(cornerstoneTools.StackScrollMouseWheelTool);
 
-    // ✅ Resize canvas after div layout is ready
-    const resizeObserver = new ResizeObserver(() => {
-      cornerstone.resize(viewerRef.current, true);
-    });
-    resizeObserver.observe(viewerRef.current);
+        cornerstoneTools.setToolActive("Pan", { mouseButtonMask: 1 });
+        cornerstoneTools.setToolActive("Zoom", { mouseButtonMask: 2 });
+        cornerstoneTools.setToolActive("StackScrollMouseWheel", {});
 
-    return () => {
-      cornerstone.disable(viewerRef.current);
-      resizeObserver.disconnect();
-    };
-  }, []);
+        return () => {
+            cornerstone.disable(viewerRef.current);
+        };
+    }, []);
 
-  useEffect(() => {
-    if (!series || !viewerRef.current) return;
+    // Load images when series changes
+    useEffect(() => {
+        if (!series || !viewerRef.current) return;
 
-    const fetchInstances = async () => {
-      try {
-        const res = await fetch(`/api/series/${series}/instances`, {
-          headers: {
-            Authorization: "Basic " + btoa("orthanc:orthanc"),
-            Accept: "application/json",
-          },
-        });
-        if (!res.ok) throw new Error(`Error fetching series instances: ${res.status}`);
+        const fetchInstances = async () => {
+            try {
+                const res = await fetch(`/api/series/${series}/instances`, {
+                    headers: {
+                        Authorization: "Basic " + btoa("orthanc:orthanc"),
+                        Accept: "application/json",
+                    },
+                });
 
-        const instanceData = await res.json();
-        const sortedInstances = instanceData.sort((a, b) => {
-          return (parseInt(a.MainDicomTags?.InstanceNumber || 0) - parseInt(b.MainDicomTags?.InstanceNumber || 0));
-        });
+                if (!res.ok) {
+                    throw new Error(`Error fetching series instances: ${res.status}`);
+                }
 
-        const wadouriImageIds = sortedInstances.map((instance) => `wadouri:/api/instances/${instance.ID}/file`);
-        setStack(wadouriImageIds);
+                const instanceData = await res.json();
+                console.log("RAW instances response:", instanceData);
 
-        if (wadouriImageIds.length === 0) return;
+                // ✅ Sort slices correctly
+                const sortedInstances = instanceData.sort((a, b) => {
+                    const aNum = parseInt(a.MainDicomTags?.InstanceNumber || 0);
+                    const bNum = parseInt(b.MainDicomTags?.InstanceNumber || 0);
+                    return aNum - bNum;
+                });
 
-        const firstImage = await cornerstone.loadAndCacheImage(wadouriImageIds[0]);
-        cornerstone.displayImage(viewerRef.current, firstImage);
+                // ✅ FIX: use instance.ID (not object)
+                const wadouriImageIds = sortedInstances.map(
+                    (instance) =>
+                        `wadouri:/api/instances/${instance.ID}/file`
+                );
 
-        cornerstoneTools.addStackStateManager(viewerRef.current, ["stack"]);
-        cornerstoneTools.addToolState(viewerRef.current, "stack", {
-          imageIds: wadouriImageIds,
-          currentImageIdIndex: 0,
-        });
+                setStack(wadouriImageIds);
 
-      } catch (err) {
-        console.error("Error loading series:", err);
-      }
-    };
+                if (wadouriImageIds.length === 0) {
+                    console.warn("No images found for this series");
+                    return;
+                }
 
-    fetchInstances();
-  }, [series]);
+                // Load and display first image
+                const firstImage = await cornerstone.loadAndCacheImage(
+                    wadouriImageIds[0]
+                );
 
-  return (
-    <div
-      ref={viewerRef}
-      style={{
-        flex: 1,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "#000",
-        borderRadius: "6px",
-        display: "block",
-      }}
-      onContextMenu={(e) => e.preventDefault()}
-    />
-  );
+                cornerstone.displayImage(viewerRef.current, firstImage);
+
+                // Setup stack scrolling
+                cornerstoneTools.addStackStateManager(viewerRef.current, ["stack"]);
+                cornerstoneTools.addToolState(viewerRef.current, "stack", {
+                    imageIds: wadouriImageIds,
+                    currentImageIdIndex: 0,
+                });
+
+                console.log("Loaded series:", series, wadouriImageIds);
+            } catch (err) {
+                console.error("Error loading series:", err);
+            }
+        };
+
+        fetchInstances();
+    }, [series]);
+
+    return (
+        <div
+            ref={viewerRef}
+            style={{
+                flex: 1,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "#000",
+                borderRadius: "6px",
+                display: "block",
+            }}
+            onContextMenu={(e) => e.preventDefault()}
+        />
+    );
 }
 
 export default OrthancViewer;

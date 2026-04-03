@@ -5,12 +5,21 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': { // any endpoint starting with /api will be proxied
+      '/api': {
         target: 'http://localhost:8042',
         changeOrigin: true,
-        secure: false,
-        rewrite: path => path.replace(/^\/api/, '') // remove /api prefix
-      },
-    },
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
   },
+  optimizeDeps: {
+    include: [
+      '@cornerstonejs/core',
+      '@cornerstonejs/tools',
+      '@cornerstonejs/dicom-image-loader',
+      '@cornerstonejs/codec-charls',
+      '@cornerstonejs/codec-libjpeg-turbo-8bit',
+      '@cornerstonejs/codec-openjpeg'
+    ]
+  }
 })

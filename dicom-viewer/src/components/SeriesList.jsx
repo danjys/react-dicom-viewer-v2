@@ -5,7 +5,6 @@ function SeriesList({ study, selectedSeries, onSeriesSelect }) {
   const [seriesList, setSeriesList] = useState([]);
   const [seriesDetails, setSeriesDetails] = useState({});
 
-  // Format DICOM date
   const formatDate = (dicomDate) => {
     if (!dicomDate || dicomDate.length !== 8) return "N/A";
     return `${dicomDate.slice(0, 4)}-${dicomDate.slice(4, 6)}-${dicomDate.slice(6, 8)}`;
@@ -17,13 +16,16 @@ function SeriesList({ study, selectedSeries, onSeriesSelect }) {
       setSeriesList([]);
       return;
     }
+    console.log("Study changed, setting series list:", study.Series);
     setSeriesList(study.Series || []);
   }, [study]);
 
   // Fetch series details
   useEffect(() => {
     seriesList.forEach((sid) => {
-      if (seriesDetails[sid]) return; // avoid duplicate fetch
+      if (seriesDetails[sid]) return;
+
+      console.log("Fetching details for series:", sid);
 
       fetch(`/api/series/${sid}`, {
         headers: {
@@ -33,26 +35,33 @@ function SeriesList({ study, selectedSeries, onSeriesSelect }) {
       })
         .then((res) => res.json())
         .then((data) => {
+          console.log("Fetched series data:", data);
           setSeriesDetails((prev) => ({
             ...prev,
             [sid]: {
-              description:
-                data.MainDicomTags?.SeriesDescription || "No Description",
+              description: data.MainDicomTags?.SeriesDescription || "No Description",
               date: data.MainDicomTags?.SeriesDate || "",
               modality: data.MainDicomTags?.Modality || "",
+              orthancSeriesId: data.ID, // Use Orthanc internal ID to fetch instances
             },
           }));
         })
-        .catch((err) =>
-          console.error("Fetch series detail error:", err)
-        );
+        .catch((err) => console.error("Error fetching series details:", err));
     });
   }, [seriesList]);
+
+  const handleClick = (series) => {
+    if (!series || !series.orthancSeriesId) {
+      console.warn("Series not ready yet:", series);
+      return;
+    }
+    console.log("Series clicked:", series);
+    onSeriesSelect(series); // Pass the full series object
+  };
 
   return (
     <div className="series-column">
       <h2>Series</h2>
-
       {seriesList.length === 0 && <p>No series available.</p>}
 
       <ul className="series-list">
@@ -63,14 +72,11 @@ function SeriesList({ study, selectedSeries, onSeriesSelect }) {
             <li key={sid}>
               <button
                 className={`series-card ${
-                  selectedSeries === sid ? "selected" : ""
+                  selectedSeries?.orthancSeriesId === series?.orthancSeriesId ? "selected" : ""
                 }`}
-                onClick={() => onSeriesSelect(sid)}
+                onClick={() => handleClick(series)}
               >
-                <div className="series-title">
-                  {series?.description || sid}
-                </div>
-
+                <div className="series-title">{series?.description || sid}</div>
                 <div className="series-meta">
                   <span>{formatDate(series?.date)}</span>
                   <span>{series?.modality}</span>

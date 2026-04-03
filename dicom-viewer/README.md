@@ -23,6 +23,10 @@ npm install hammerjs
 npm install cornerstone-tools
 npm install cornerstone-core cornerstone-tools cornerstone-wado-image-loader dicom-parser hammerjs cornerstone-math
 npm run dev
+npm install @cornerstonejs/core @cornerstonejs/tools @cornerstonejs/dicom-image-loader @cornerstonejs/streaming-image-volume-loader hammerjs dicom-parser
+
+npm install @cornerstonejs/codec-charls @cornerstonejs/codec-libjpeg-turbo-8bit @cornerstonejs/codec-openjpeg
+
 
 git remote add origin https://github.com/danjys/react-dicom-viewer.git
 git branch -M main
