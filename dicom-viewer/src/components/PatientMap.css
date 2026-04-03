@@ -6,6 +6,7 @@
   flex-direction: column;
   background: #1e1e1e;
   position: relative;
+  overflow: hidden;
 }
 
 .patientmap-controls {
@@ -16,6 +17,7 @@
   align-items: center;
   gap: 16px;
   flex-shrink: 0;
+  z-index: 10;
 }
 
 .toggle-switch {
@@ -62,6 +64,7 @@
 .toggle-label {
   font-size: 12px;
   font-weight: 500;
+  transition: color 0.3s;
 }
 
 .selected-node-info {
@@ -89,9 +92,28 @@
   min-height: 500px;
 }
 
-/* Graph node styles */
-.node.highlighted {
+/* Node styles */
+.patientmap-graph .node {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.patientmap-graph .node:hover {
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+  transform: translateY(-2px);
+}
+
+.patientmap-graph .node.highlighted {
   filter: drop-shadow(0 0 10px rgba(0, 150, 255, 0.5));
+}
+
+/* Edge styles */
+.patientmap-graph path {
+  transition: stroke-width 0.2s ease;
+}
+
+.patientmap-graph path:hover {
+  stroke-width: 3px !important;
 }
 
 /* Scrollbar styles */
@@ -112,4 +134,20 @@
 
 .patientmap-graph::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .patientmap-graph {
+    padding: 10px;
+  }
+  
+  .toggle-label {
+    font-size: 10px;
+  }
+  
+  .selected-node-info {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
 }

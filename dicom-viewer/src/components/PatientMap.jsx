@@ -1,9 +1,9 @@
-// PatientMap.jsx - Fixed DOT syntax
+// PatientMap.jsx - Complete working version with LEFT-JUSTIFIED nodes in each row
 import React, { useState, useEffect, useRef } from 'react';
 import { Graphviz } from '@hpcc-js/wasm';
 import './PatientMap.css';
 
-// Sample data directly in the component
+// Sample data with multiple studies per date
 const SAMPLE_PATIENT_DATA = [
   {
     id: 'CT1',
@@ -11,7 +11,6 @@ const SAMPLE_PATIENT_DATA = [
     modality: 'CT',
     time: '2023-06-01',
     dateAnchor: '2023-06-01',
-    connects: ['RTSTRUCT1'],
     metadata: { thickness: '1mm', resolution: '512x512' }
   },
   {
@@ -20,6 +19,7 @@ const SAMPLE_PATIENT_DATA = [
     modality: 'MR',
     time: '2023-06-01',
     dateAnchor: '2023-06-01',
+    connects: ['CT1'],
     metadata: { sequence: 'T1' }
   },
   {
@@ -28,7 +28,7 @@ const SAMPLE_PATIENT_DATA = [
     modality: 'RTSTRUCT',
     time: '2023-06-01',
     dateAnchor: '2023-06-01',
-    connects: ['CT1', 'RTPLAN1'],
+    connects: ['CT1'],
     metadata: { rois: 6 }
   },
   {
@@ -37,7 +37,7 @@ const SAMPLE_PATIENT_DATA = [
     modality: 'RTPLAN',
     time: '2023-06-02',
     dateAnchor: '2023-06-02',
-    connects: ['RTSTRUCT1', 'RTDOSE1'],
+    connects: ['RTSTRUCT1'],
     metadata: { technique: 'IMRT', fractions: 25 }
   },
   {
@@ -68,12 +68,56 @@ const SAMPLE_PATIENT_DATA = [
     metadata: { match: '3mm' }
   },
   {
+    id: 'MR2',
+    label: 'Follow-up MRI',
+    modality: 'MR',
+    time: '2023-06-04',
+    dateAnchor: '2023-06-04',
+    connects: ['MR1'],
+    metadata: { sequence: 'T2' }
+  },
+  {
+    id: 'RTSTRUCT2',
+    label: 'Adapted Structures',
+    modality: 'RTSTRUCT',
+    time: '2023-06-04',
+    dateAnchor: '2023-06-04',
+    connects: ['MR2'],
+    metadata: { rois: 5 }
+  },
+  {
+    id: 'CT2',
+    label: 'Adaptive CT',
+    modality: 'CT',
+    time: '2023-06-05',
+    dateAnchor: '2023-06-05',
+    connects: ['CT1'],
+    metadata: { thickness: '1mm' }
+  },
+  {
+    id: 'RTPLAN2',
+    label: 'Adaptive Plan',
+    modality: 'RTPLAN',
+    time: '2023-06-05',
+    dateAnchor: '2023-06-05',
+    connects: ['RTSTRUCT2', 'CT2'],
+    metadata: { technique: 'VMAT', fractions: 20 }
+  },
+  {
     id: 'REG1',
-    label: 'Reg CT1 → CBCT1',
+    label: 'Reg CT1 → CT2',
     modality: 'REG',
-    time: '2023-06-03',
-    connects: ['CT1', 'CBCT1'],
-    metadata: { method: 'Rigid', comment: 'Setup verification' }
+    time: '2023-06-05',
+    connects: ['CT1', 'CT2'],
+    metadata: { method: 'Rigid', comment: 'Planning to Adaptive' }
+  },
+  {
+    id: 'REG2',
+    label: 'Reg MR1 → MR2',
+    modality: 'REG',
+    time: '2023-06-04',
+    connects: ['MR1', 'MR2'],
+    metadata: { method: 'Deformable', comment: 'MRI Alignment' }
   }
 ];
 
@@ -94,8 +138,8 @@ const PatientMap = ({ series, patientId, studyId }) => {
     
     try {
       const graphviz = await Graphviz.load();
-      const dot = generateGraphvizDot(patientData, showRegistrationLines);
-      console.log('Generated DOT:', dot); // Debug: see the generated DOT
+      const dot = generateTimelineDot(patientData, showRegistrationLines);
+      console.log('Generated DOT:', dot);
       const svg = await graphviz.layout(dot, 'svg', 'dot');
       
       graphContainerRef.current.innerHTML = svg;
@@ -107,65 +151,140 @@ const PatientMap = ({ series, patientId, studyId }) => {
     }
   };
 
-  const generateGraphvizDot = (data, showRegistrationLines) => {
-    let lines = [];
-    lines.push('digraph patientmap {');
-    lines.push('  graph [rankdir=TB, bgcolor=transparent, splines=ortho];');
-    lines.push('  node [shape=box, style="filled,rounded", fontname="Arial", fontsize=10];');
-    lines.push('  edge [color="#666666", penwidth=2];');
+  const generateTimelineDot = (data, showRegistrationLines) => {
+    const lines = [];
+    lines.push('digraph timeline {');
+    lines.push('  rankdir=TB;');
+    lines.push('  splines=ortho;');
+    lines.push('  nodesep=0.3;');
+    lines.push('  ranksep=0.8;');
+    lines.push('  newrank=true;');
+    lines.push('  bgcolor=transparent;');
     lines.push('');
     
     // Group nodes by date
     const nodesByDate = {};
     data.forEach(node => {
-      const date = node.dateAnchor || node.time || 'no_date';
-      if (!nodesByDate[date]) nodesByDate[date] = [];
-      nodesByDate[date].push(node);
+      const date = node.dateAnchor || node.time;
+      if (date && date.trim()) {
+        if (!nodesByDate[date]) nodesByDate[date] = [];
+        nodesByDate[date].push(node);
+      }
     });
     
-    // Sort dates
+    // Sort dates chronologically (oldest to newest for top-to-bottom)
     const sortedDates = Object.keys(nodesByDate).sort((a, b) => {
-      if (a === 'no_date') return 1;
-      if (b === 'no_date') return -1;
       return new Date(a) - new Date(b);
     });
     
-    // Create subgraphs for each date
+    // Create invisible left-alignment anchors for each row
     sortedDates.forEach((date, idx) => {
-      const nodes = nodesByDate[date];
-      const clusterName = `cluster_${idx}`;
-      const dateLabel = formatDate(date);
+      const dateNodes = nodesByDate[date];
       
-      lines.push(`  subgraph ${clusterName} {`);
-      lines.push(`    label="${dateLabel}";`);
-      lines.push(`    style="dashed";`);
-      lines.push(`    color="#999999";`);
-      lines.push(`    fontcolor="#666666";`);
-      lines.push(`    fontsize=12;`);
-      lines.push(`    penwidth=1;`);
-      lines.push('');
+      // Create an invisible anchor node for left alignment
+      lines.push(`  left_anchor_${idx} [style=invis, width=0, height=0, shape=point];`);
       
-      nodes.forEach(node => {
-        const color = getNodeColor(node.modality);
-        const label = `${node.label}\\n${node.modality}`;
-        // Fixed: Use proper attribute syntax without quotes around attribute names
-        lines.push(`    "${node.id}" [label="${label}", fillcolor="${color}", width=1.2, height=0.8];`);
-      });
+      // Put anchor on the same rank as the date header
+      lines.push(`  { rank=same; left_anchor_${idx}; row_header_${idx}; }`);
       
-      lines.push(`  }`);
-      lines.push('');
+      // Connect anchor to first node to force left alignment
+      if (dateNodes.length > 0) {
+        lines.push(`  left_anchor_${idx} -> node_${idx}_0 [style=invis, weight=100];`);
+      }
     });
     
-    // Add edges
+    lines.push('');
+    
+    // Create row headers (date labels)
+    sortedDates.forEach((date, idx) => {
+      const formattedDate = formatDate(date);
+      lines.push(`  row_header_${idx} [label="${formattedDate}", shape=plaintext, fontsize=14, fontcolor="#666666", fontname="Arial Bold"];`);
+    });
+    
+    lines.push('');
+    
+    // Connect row headers vertically
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+      lines.push(`  row_header_${i} -> row_header_${i + 1} [style=invis, weight=100];`);
+    }
+    
+    lines.push('');
+    
+    // Create individual nodes for each study (not as tables)
+    sortedDates.forEach((date, idx) => {
+      const dateNodes = nodesByDate[date];
+      
+      dateNodes.forEach((node, nodeIdx) => {
+        const color = getNodeColor(node.modality);
+        const label = `${node.label}\\n${node.modality}`;
+        lines.push(`  node_${idx}_${nodeIdx} [label="${label}", fillcolor="${color}", style="filled,rounded", shape=box, width=1.2, height=0.8, fontname="Arial", fontsize=10];`);
+      });
+    });
+    
+    lines.push('');
+    
+    // Put nodes in each row on the same rank and chain them left-to-right
+    sortedDates.forEach((date, idx) => {
+      const dateNodes = nodesByDate[date];
+      const nodeIds = [];
+      
+      for (let i = 0; i < dateNodes.length; i++) {
+        nodeIds.push(`node_${idx}_${i}`);
+      }
+      
+      if (nodeIds.length > 0) {
+        // Create invisible chain from left anchor to first node to force left alignment
+        lines.push(`  left_anchor_${idx} -> ${nodeIds[0]} [style=invis, weight=100];`);
+        
+        // Chain nodes horizontally
+        for (let i = 0; i < nodeIds.length - 1; i++) {
+          lines.push(`  ${nodeIds[i]} -> ${nodeIds[i + 1]} [style=invis, weight=50];`);
+        }
+        
+        // Put all nodes on the same rank
+        lines.push(`  { rank=same; left_anchor_${idx}; ${nodeIds.join('; ')}; }`);
+      }
+    });
+    
+    lines.push('');
+    lines.push('  // Relationship edges');
+    
+    // Add relationship edges
     data.forEach(node => {
       if (node.connects && node.connects.length > 0) {
         node.connects.forEach(target => {
-          // Only show registration lines if toggle is on
+          // Skip registration lines if toggle is off
           if (node.modality === 'REG' && !showRegistrationLines) return;
           
-          const isReg = node.modality === 'REG';
-          const style = isReg ? 'style="dashed", color="#FF6B6B", penwidth=2' : 'style="solid", color="#666666", penwidth=2';
-          lines.push(`  "${node.id}" -> "${target}" [${style}];`);
+          // Find which rows and positions contain source and target
+          let sourceRow = null, sourcePos = null;
+          let targetRow = null, targetPos = null;
+          
+          for (let i = 0; i < sortedDates.length; i++) {
+            const date = sortedDates[i];
+            const dateNodes = nodesByDate[date];
+            
+            const sourceIndex = dateNodes.findIndex(n => n.id === node.id);
+            if (sourceIndex !== -1) {
+              sourceRow = i;
+              sourcePos = sourceIndex;
+            }
+            
+            const targetIndex = dateNodes.findIndex(n => n.id === target);
+            if (targetIndex !== -1) {
+              targetRow = i;
+              targetPos = targetIndex;
+            }
+          }
+          
+          if (sourceRow !== null && targetRow !== null && sourcePos !== null && targetPos !== null) {
+            const isReg = node.modality === 'REG';
+            if (isReg) {
+              lines.push(`  node_${sourceRow}_${sourcePos} -> node_${targetRow}_${targetPos} [style="dashed", color="#FF6B6B", penwidth=2, arrowhead=none, constraint=false];`);
+            } else {
+              lines.push(`  node_${sourceRow}_${sourcePos} -> node_${targetRow}_${targetPos} [style="solid", color="#666666", penwidth=2];`);
+            }
+          }
         });
       }
     });
@@ -178,44 +297,79 @@ const PatientMap = ({ series, patientId, studyId }) => {
     const svgElement = graphContainerRef.current?.querySelector('svg');
     if (!svgElement) return;
     
-    // Add click handlers to nodes
+    // Find all node elements
     const nodes = svgElement.querySelectorAll('.node');
+    const nodeMap = new Map();
+    
+    // Map node elements to their IDs
     nodes.forEach(node => {
-      node.style.cursor = 'pointer';
-      node.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const title = node.querySelector('title');
-        if (title) {
-          const nodeId = title.textContent;
-          const found = patientData.find(n => n.id === nodeId);
-          if (found) {
-            setSelectedNode(found);
-            highlightNode(node);
+      const title = node.querySelector('title');
+      if (title) {
+        const nodeId = title.textContent;
+        nodeMap.set(nodeId, node);
+        
+        // Find which data node this corresponds to
+        const match = nodeId.match(/node_(\d+)_(\d+)/);
+        if (match) {
+          const row = parseInt(match[1]);
+          const pos = parseInt(match[2]);
+          
+          // Find the actual data node
+          const dates = Object.keys(groupNodesByDate(patientData));
+          const sortedDates = dates.sort((a, b) => new Date(a) - new Date(b));
+          const date = sortedDates[row];
+          const nodesByDate = groupNodesByDate(patientData);
+          const dataNode = nodesByDate[date]?.[pos];
+          
+          if (dataNode) {
+            node.style.cursor = 'pointer';
+            node.style.transition = 'all 0.2s ease';
+            
+            node.addEventListener('click', (e) => {
+              e.stopPropagation();
+              setSelectedNode(dataNode);
+              highlightNode(node);
+            });
+            
+            node.addEventListener('mouseenter', () => {
+              if (!node.classList.contains('highlighted')) {
+                node.style.filter = 'drop-shadow(0 2px 8px rgba(0,0,0,0.15))';
+                node.style.transform = 'translateY(-2px)';
+              }
+            });
+            
+            node.addEventListener('mouseleave', () => {
+              if (!node.classList.contains('highlighted')) {
+                node.style.filter = '';
+                node.style.transform = 'translateY(0)';
+              }
+            });
           }
         }
-      });
-      
-      // Add hover effect
-      node.addEventListener('mouseenter', () => {
-        if (!node.classList.contains('highlighted')) {
-          node.style.filter = 'drop-shadow(0 0 5px rgba(0,0,0,0.3))';
-        }
-      });
-      node.addEventListener('mouseleave', () => {
-        if (!node.classList.contains('highlighted')) {
-          node.style.filter = '';
-        }
-      });
+      }
     });
+  };
+  
+  const groupNodesByDate = (data) => {
+    const nodesByDate = {};
+    data.forEach(node => {
+      const date = node.dateAnchor || node.time;
+      if (date && date.trim()) {
+        if (!nodesByDate[date]) nodesByDate[date] = [];
+        nodesByDate[date].push(node);
+      }
+    });
+    return nodesByDate;
   };
 
   const highlightNode = (node) => {
     // Clear previous highlights
     document.querySelectorAll('.node').forEach(n => {
       n.classList.remove('highlighted');
+      n.style.filter = '';
+      n.style.transform = 'translateY(0)';
       n.style.stroke = '';
       n.style.strokeWidth = '';
-      n.style.filter = '';
     });
     
     node.classList.add('highlighted');
@@ -241,7 +395,7 @@ const PatientMap = ({ series, patientId, studyId }) => {
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr || dateStr === 'no_date') return 'Date Unknown';
+    if (!dateStr) return 'Date Unknown';
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
     return date.toLocaleDateString('en-US', { 
@@ -274,8 +428,18 @@ const PatientMap = ({ series, patientId, studyId }) => {
           <div className="selected-node-info">
             <strong>Selected:</strong> {selectedNode.label}
             <button 
-              onClick={() => setSelectedNode(null)}
-              style={{ marginLeft: '8px', background: 'none', border: 'none', color: '#999', cursor: 'pointer' }}
+              onClick={() => {
+                setSelectedNode(null);
+                // Clear highlight from UI
+                document.querySelectorAll('.node').forEach(n => {
+                  n.classList.remove('highlighted');
+                  n.style.filter = '';
+                  n.style.transform = 'translateY(0)';
+                  n.style.stroke = '';
+                  n.style.strokeWidth = '';
+                });
+              }}
+              style={{ marginLeft: '8px', background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '14px' }}
             >
               ✕
             </button>
